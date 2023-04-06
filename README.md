@@ -6,7 +6,7 @@ This project is part of a [blog](https://dev.to/iotbuilders/automatically-applyi
 
 The diagram below describes how the solution works. More details in the blog post linked above.
 
-![How it works](docs/How it works diagram.png)
+![](docs/how-it-works-diagram.png)
 
 ## Running the demo
 
@@ -46,8 +46,8 @@ If your **shouldCreateThingAndIdentity** flag is set to **false**, you need to m
 * Verify that the workflow was successfully triggered:
     * Log into the AWS Console, navigate to AWS Step Functions, find the ConfigManagement State Machine, and explore the execution, as shown in the images below.
 
-![State Machine Waiting for IoT device response](docs/State Machine Waiting for IoT device response.png)
-![State Machine Success](docs/State Machine Success.png)
+![](docs/State-Machine-Waiting.png)
+![](docs/State-Machine-Success.png)
 
 ## Security
 
