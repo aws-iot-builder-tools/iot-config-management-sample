@@ -1,9 +1,11 @@
+
+// Populate this constant with your account specific details.
 export const config =
 {
-    iotEndpoint: 'a2amsqekv5n64k-ats.iot.us-east-1.amazonaws.com',
+    iotEndpoint: '',
     clientId: 'CM-Test',
-    policyName: 'fullCitizen',
+    policyName: '',
     verbosity: 'warn',
-    region: 'us-east-1',
-    shouldCreateThingAndIdentity: false
+    region: '',
+    shouldCreateThingAndIdentity: true
 }
