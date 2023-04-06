@@ -1,0 +1,10 @@
+{
+  "name": "mqttjs-client-aws-iot",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "mqtt": "^4.3.7",
+    "fs": "^0.0.1-security",
+    "@aws-sdk/client-iot": "^3.45.0"
+  }
+}

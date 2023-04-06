@@ -1,0 +1,11 @@
+/.idea/
+/.aws-sam/
+/samconfig.toml
+# Ignore Mac DS_Store files
+**/.DS_Store
+/device/certs/certificate.pem
+/device/certs/private-key.pem
+/device/node_modules/
+/functions/3p-user-profile/node_modules/
+/functions/device-events/node_modules/
+/functions/set-configuration/node_modules/

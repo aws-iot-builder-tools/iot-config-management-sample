@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM template for IoT Configuration Management Sample.
+
+Globals:
+  Function:
+    Tracing: Active
+    Timeout: 60
+    Architectures:
+      - x86_64
+    Runtime: nodejs18.x
+
+Parameters:
+  StateMachineName:
+    Type: String
+    Default: ConfigManagement
+
+Resources:
+  3PartyGetUserProfileForDevice:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/3p-user-profile/
+      Handler: app.lambdaHandler
+
+  SetConfigurationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - iot:Publish
+            Resource: "*"
+      CodeUri: functions/set-configuration/
+      Handler: app.lambdaHandler
+
+  EventReceivedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource: !Join [ "", [ "arn:aws:dynamodb:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":table/", !Ref "CMTaskTokens" ] ]
+        - Statement:
+            Effect: Allow
+            Action:
+              - states:SendTaskFailure
+              - states:SendTaskSuccess
+            Resource: !Ref CMStateMachine
+      CodeUri: functions/device-events/
+      Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          TOKENS_TABLE_NAME: !Ref CMTaskTokens
+      Events:
+        EventReceived:
+          Type: IoTRule
+          Properties:
+            AwsIotSqlVersion: 2016-03-23
+            Sql: SELECT *, topic(2) AS thingName FROM 'devices/+/config_resp'
+
+  StartCMStateMachine:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName:  StartCMStateMachine
+      TopicRulePayload:
+        AwsIotSqlVersion: 2016-03-23
+        RuleDisabled: False
+        Sql: SELECT *, topic(5) AS thingName FROM '$aws/events/presence/connected/+'
+        Actions:
+          - StepFunctions:
+              RoleArn: !GetAtt CMStepFunctionInvoke.Arn
+              StateMachineName: !Sub "${StateMachineName}"
+
+  CMStepFunctionInvoke:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - iot.amazonaws.com
+      Policies:
+        - PolicyName: allowStartStepFunction
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref CMStateMachine
+
+  CMStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - states.amazonaws.com
+      Policies:
+        - PolicyName: allowIoT
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iot:describeThing
+                  - iot:describeEndpoint
+                Resource: '*'
+        - PolicyName: allowLogs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutLogEvents
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: '*'
+        - PolicyName: allowTrace
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: '*'
+        - PolicyName: allowDynamo
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:PutItem
+                Resource: !Join [ "", [ "arn:aws:dynamodb:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":table/", !Ref "CMTaskTokens" ] ]
+        - PolicyName: allowLambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: [ !GetAtt 3PartyGetUserProfileForDevice.Arn, !GetAtt SetConfigurationFunction.Arn]
+
+  CMStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub "${StateMachineName}"
+      DefinitionUri: statemachine/config_management.asl.json
+      Role: !GetAtt  CMStateMachineRole.Arn
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt CMStepFunctionsLogGroup.Arn
+        IncludeExecutionData: True
+        Level: ALL
+      Tracing:
+        Enabled: true
+
+  CMStepFunctionsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/stepfunc/${StateMachineName}
+      RetentionInDays: 30
+
+  CMTaskTokens:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:  CMTaskTokens
+      AttributeDefinitions:
+        - AttributeName: operationId
+          AttributeType: S
+        - AttributeName: token
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: operationId
+          KeyType: HASH
+        - AttributeName: token
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Join:
+        - ''
+        - - ApplicationInsights-SAM-
+          - Ref: AWS::StackName
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Fn::Join:
+        - ''
+        - - ApplicationInsights-SAM-
+          - Ref: AWS::StackName
+      AutoConfigurationEnabled: 'true'
+    DependsOn: ApplicationResourceGroup

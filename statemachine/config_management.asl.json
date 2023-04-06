@@ -1,0 +1,123 @@
+{
+  "Comment": "A description of an example IoT Config Management State Machine",
+  "StartAt": "DescribeThing",
+  "States": {
+    "DescribeThing": {
+      "Type": "Task",
+      "Parameters": {
+        "ThingName.$": "$.thingName"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:iot:describeThing",
+      "Next": "3Party_GetUserProfileForDevice",
+      "ResultPath": "$.thing",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "BackoffRate": 2,
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2
+        }
+      ]
+    },
+    "3Party_GetUserProfileForDevice": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:123227395025:function:CMSample-3PartyGetUserProfileForDevice-EoYwlliKm1ps"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "SetConfigurationOnDevice"
+    },
+    "SetConfigurationOnDevice": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-1:123227395025:function:CMSample-SetConfigurationFunction-peF8d8CzF5pw"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "WaitForConfirmationEventFromDevice"
+    },
+    "WaitForConfirmationEventFromDevice": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem.waitForTaskToken",
+      "Parameters": {
+        "TableName": "CMTaskTokens",
+        "Item": {
+          "deviceId": {
+            "S.$": "$.thingName"
+          },
+          "operationId": {
+            "S.$": "$.operationId"
+          },
+          "token": {
+            "S.$": "$$.Task.Token"
+          },
+          "name": {
+            "S.$": "$.name"
+          },
+          "status": {
+            "S": "ACTIVE"
+          }
+        }
+      },
+      "Next": "InterpretResult",
+      "ResultPath": "$.result",
+      "HeartbeatSeconds": 12
+    },
+    "InterpretResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.result",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.result.status",
+              "StringMatches": "SUCCESS"
+            }
+          ],
+          "Next": "Success"
+        }
+      ],
+      "Default": "Fail"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "Fail": {
+      "Type": "Fail"
+    }
+  }
+}

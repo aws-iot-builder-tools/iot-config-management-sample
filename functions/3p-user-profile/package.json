@@ -1,0 +1,8 @@
+{
+  "name": "3puserprofile",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+   "mathjs": "^11.8.0"
+  }
+}
