@@ -11,7 +11,7 @@ const TOKENS_TABLE_NAME = process.env.TOKENS_TABLE_NAME;
 
 /**
  * Relevant event is:
- * SET_TEMP_RESP
+ * SET_TEMP
  * @param event
  */
 export const lambdaHandler = async (event) => {
@@ -80,7 +80,7 @@ const query = async (operationId, name, thingName) => {
     const response = await dynamodb.send(new QueryCommand(queryInput));
     console.log('RESPONSE', response);
     if (response.Count === 0) {
-        console.log(`[WME-UpgradeStatusFromEvents] operationId: ${operationId}, error: No ACTIVE Entry found for ${name} and ${operationId} and ${thingName}.`);
+        console.log(`[DeviceEvents] OperationId: ${operationId}, error: No ACTIVE Entry found for ${name} and ${operationId} and ${thingName}.`);
         return;
     } else if (response.Items && (response.Count === 1)) {
         const item = unmarshall(response.Items[0]);
