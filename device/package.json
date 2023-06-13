@@ -5,6 +5,6 @@
   "dependencies": {
     "mqtt": "^4.3.7",
     "fs": "^0.0.1-security",
-    "@aws-sdk/client-iot": "^3.45.0"
+    "@aws-sdk/client-iot": "^3.350.0"
   }
 }
