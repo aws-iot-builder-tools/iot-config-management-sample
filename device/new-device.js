@@ -6,8 +6,8 @@ import {
 import fs from 'fs';
 import {config} from './config.js';
 
-const CERTIFICATE_FILE = 'certs/certificate.pem';
-const PRIVATE_KEY_FILE = 'certs/private-key.pem';
+const CERTIFICATE_FILE = 'certificate.pem';
+const PRIVATE_KEY_FILE = 'private-key.pem';
 const client = new IoTClient({region: config.region});
 
 export class Device {
@@ -50,8 +50,8 @@ export class Device {
 
 
     _storeCertificate(response) {
-        fs.writeFileSync("certs/private-key.pem", response.keyPair.PrivateKey);
-        fs.writeFileSync("certs/certificate.pem", response.certificatePem);
+        fs.writeFileSync("private-key.pem", response.keyPair.PrivateKey);
+        fs.writeFileSync("certificate.pem", response.certificatePem);
         return true;
     };
 

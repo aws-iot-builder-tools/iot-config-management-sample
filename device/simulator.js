@@ -2,8 +2,8 @@ import {readFile} from 'fs/promises'
 import mqtt from 'mqtt';
 import {config} from './config.js';
 import {Device} from "./new-device.js";
-const CERTIFICATE_FILE = 'certs/certificate.pem';
-const PRIVATE_KEY_FILE = 'certs/private-key.pem';
+const CERTIFICATE_FILE = 'certificate.pem';
+const PRIVATE_KEY_FILE = 'private-key.pem';
 
 const main = async (config) => {
     config.clientId = config.clientId || 'CM-Test';
