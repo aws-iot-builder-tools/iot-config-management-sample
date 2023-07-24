@@ -23,6 +23,7 @@ To create the resources and run the application, follow the following steps:
 
 * In the root directory, `iot-config-management-sample`, run the following commands:
     `sam build`
+
      `sam deploy --guided`
 
 * Start the device simulator:
@@ -40,6 +41,8 @@ To create the resources and run the application, follow the following steps:
 If your **shouldCreateThingAndIdentity** flag is set to **false**, you need to make sure the IoT thing, certificate and key have already been created, and store the certificate and key in the certs folder prior to running the mqtt client.
 
 * Start the simulator: 
+    `npm install simulator.js`
+
    `node simulator.js`
 * If the simulator is successfully started, you should already see that an AWS Step Functions workflow was triggered automatically, once your device successfully connected to AWS IoT. Note that the simulator implements a delay of 10 seconds between receiving the request and sending a successful response.
 

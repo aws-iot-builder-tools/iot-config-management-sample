@@ -20,12 +20,14 @@ Resources:
   3PartyGetUserProfileForDevice:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: 3PartyGetUserProfileForDevice
       CodeUri: functions/3p-user-profile/
       Handler: app.lambdaHandler
 
   SetConfigurationFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: SetConfigurationFunction
       Policies:
         - Statement:
             Effect: Allow
@@ -165,6 +167,9 @@ Resources:
     Properties:
       Name: !Sub "${StateMachineName}"
       DefinitionUri: statemachine/config_management.asl.json
+      DefinitionSubstitutions:
+        3PartyGetUserProfileForDeviceArn: !GetAtt 3PartyGetUserProfileForDevice.Arn
+        SetConfigurationFunctionArn: !GetAtt SetConfigurationFunction.Arn
       Role: !GetAtt  CMStateMachineRole.Arn
       Logging:
         Destinations:

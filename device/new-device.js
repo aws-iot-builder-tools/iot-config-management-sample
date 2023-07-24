@@ -50,8 +50,8 @@ export class Device {
 
 
     _storeCertificate(response) {
-        fs.writeFileSync("./private-key.pem", response.keyPair.PrivateKey);
-        fs.writeFileSync("./certificate.pem", response.certificatePem);
+        fs.writeFileSync("certs/private-key.pem", response.keyPair.PrivateKey);
+        fs.writeFileSync("certs/certificate.pem", response.certificatePem);
         return true;
     };
 
